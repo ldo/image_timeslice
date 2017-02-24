@@ -32,14 +32,19 @@ from qahirah import \
     Vector
 
 slice_thickness = 1
+across = True
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["thickness="]
+    ["across", "down", "thickness="]
   )
 for keyword, value in opts :
-    if keyword == "--thickness" :
+    if keyword == "--across" :
+        across = True
+    elif keyword == "--down" :
+        across = False
+    elif keyword == "--thickness" :
         slice_thickness = int(value)
         assert slice_thickness > 0
     #end if
@@ -55,7 +60,7 @@ update_interval = 1
 
 frameindex = 0
 frames = []
-frame_height = None
+frame_size = None
 sys.stderr.write("Collecting frames\n")
 sys.stderr.flush()
 start_time = time.time()
@@ -66,10 +71,16 @@ while True :
     if not os.path.isfile(framename) :
         break
     frame = qah.ImageSurface.create_from_png(framename)
-    if frame_height != None and frame.height != frame_height :
-        raise ValueError("inconsistent frame height for frame %d: %d vs %d" % (frameindex, frame_height, frame.height))
+    this_frame_size = (frame.width, frame.height)[across]
+    if frame_size != None and this_frame_size != frame_size :
+        raise ValueError \
+          (
+                "inconsistent frame %s for frame %d: %d vs %d"
+            %
+                (("width", "height")[across], frameindex, frame_size, this_frame_size)
+          )
     #end if
-    frame_height = frame.height
+    frame_size = this_frame_size
     frames.append(frame)
     now = time.time()
     if now - last_update >= update_interval :
@@ -85,7 +96,11 @@ if len(frames) == 0 :
 pix = qah.ImageSurface.create \
   (
     format = frames[0].format,
-    dimensions = Vector(len(frames) * slice_thickness, frame_height)
+    dimensions =
+        (
+            lambda : Vector(frame_size, len(frames) * slice_thickness),
+            lambda : Vector(len(frames) * slice_thickness, frame_size),
+        )[across]()
   )
 ctx = \
     (qah.Context.create(pix)
@@ -114,17 +129,27 @@ for frameindex in range(len(frames)) :
                 Matrix.translate
                   (
                     (
-                        (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
-                        0
-                    )
+                        lambda :
+                            (
+                                0,
+                                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness
+                            ),
+                        lambda :
+                            (
+                                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
+                                0
+                            ),
+                    )[across]()
                   )
               )
         )
-    (ctx
-        .new_path()
-        .rectangle(Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
-        .fill()
-    )
+    ctx.new_path()
+    if across :
+        ctx.rectangle(Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
+    else :
+        ctx.rectangle(Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
+    #end if
+    ctx.fill()
     if now - last_update >= update_interval :
         sys.stderr.write(" frame : %d\r" % frameindex)
         sys.stderr.flush()
