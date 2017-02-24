@@ -3,7 +3,7 @@
 # Take slices through a sequence of animation frames, and concatenate them
 # into a new image. Invoke this script as follows:
 #
-#     image_timeslice «input-framename-fmt» «output-filename»
+#     image_timeslice [«options»] «input-framename-fmt» «output-filename»
 #
 # where «input-framename-fmt» is a string containing a “%d” format
 # descriptor for finding the successive input frame PNG filenames, and
@@ -18,6 +18,20 @@
 #    image_timeslice frames/%04d.png timeslice.png
 #
 # would generate a timesliced image into “timeslice.png”.
+#
+# Valid «options» are as follows:
+#
+#     --across
+#         specifies that columns of pixels should be concatenated horizontally (default).
+#     --down
+#         specifies that rows of pixels should be concatenated vertically.
+#     --offset=«offset»
+#         specifies the fractional offset from the left or top edge of the image
+#         of the centre of the row or column of pixels to be extracted. If omitted,
+#         defaults to 0.5.
+#     --thickness=«thickness»
+#         specifies the thickness (in pixels) of the row or column of pixels
+#         to be extracted from each image. If omitted, defaults to 1.
 #
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 # Licensed under CC-BY-SA <http://creativecommons.org/licenses/by-sa/4.0/>.
