@@ -18,6 +18,9 @@
 #    image_timeslice frames/%04d.png timeslice.png
 #
 # would generate a timesliced image into “timeslice.png”.
+#
+# Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+# Licensed under CC-BY-SA <http://creativecommons.org/licenses/by-sa/4.0/>.
 #-
 
 import sys
