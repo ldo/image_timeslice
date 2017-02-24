@@ -22,6 +22,7 @@
 
 import sys
 import os
+import math
 import time
 import getopt
 import qahirah as qah
@@ -32,18 +33,22 @@ from qahirah import \
     Vector
 
 slice_thickness = 1
+offset = 0.5
 across = True
 opts, args = getopt.getopt \
   (
     sys.argv[1:],
     "",
-    ["across", "down", "thickness="]
+    ["across", "down", "offset=", "thickness="]
   )
 for keyword, value in opts :
     if keyword == "--across" :
         across = True
     elif keyword == "--down" :
         across = False
+    elif keyword == "--offset" :
+        offset = float(value)
+        assert offset >= 0 and offset <= 1.0
     elif keyword == "--thickness" :
         slice_thickness = int(value)
         assert slice_thickness > 0
@@ -112,6 +117,12 @@ sys.stderr.flush()
 last_update = time.time()
 for frameindex in range(len(frames)) :
     frame = frames[frameindex]
+    pat_offset = \
+        (
+            math.floor((frame_size * 2 * offset - slice_thickness + 1) / 2)
+        -
+            frameindex * slice_thickness
+        )
     ctx.source = \
         (qah.Pattern.create_for_surface(frame)
             .set_filter(CAIRO.FILTER_FAST)
@@ -120,17 +131,9 @@ for frameindex in range(len(frames)) :
                 Matrix.translate
                   (
                     (
-                        lambda :
-                            (
-                                0,
-                                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness
-                            ),
-                        lambda :
-                            (
-                                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
-                                0
-                            ),
-                    )[across]()
+                        (0, pat_offset),
+                        (pat_offset, 0),
+                    )[across]
                   )
               )
         )
