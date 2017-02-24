@@ -1,0 +1,137 @@
+#!/usr/bin/python3
+#+
+# Take slices through a sequence of animation frames, and concatenate them
+# into a new image. Invoke this script as follows:
+#
+#     image_timeslice «input-framename-fmt» «output-filename»
+#
+# where «input-framename-fmt» is a string containing a “%d” format
+# descriptor for finding the successive input frame PNG filenames, and
+# «output-filename» is the name of the output PNG file to create. It
+# will have one column of pixels for each input frame, taken from the
+# centre columns of the frames.
+#
+# For example, suppose you have a directory “frames” containing image
+# files “frames/0001.png”, “frames/0002.png” etc. Then the following
+# command
+#
+#    image_timeslice frames/%04d.png timeslice.png
+#
+# would generate a timesliced image into “timeslice.png”.
+#-
+
+import sys
+import os
+import time
+import getopt
+import qahirah as qah
+from qahirah import \
+    CAIRO, \
+    Matrix, \
+    Rect, \
+    Vector
+
+slice_thickness = 1
+opts, args = getopt.getopt \
+  (
+    sys.argv[1:],
+    "",
+    ["thickness="]
+  )
+for keyword, value in opts :
+    if keyword == "--thickness" :
+        slice_thickness = int(value)
+        assert slice_thickness > 0
+    #end if
+#end for
+if len(args) != 2 :
+    raise getopt.GetoptError \
+      (
+        "need exactly 2 args: the input filename format and the output filename"
+      )
+#end if
+input_fmt, output_filename = args
+update_interval = 1
+
+frameindex = 0
+frames = []
+frame_height = None
+sys.stderr.write("Collecting frames\n")
+sys.stderr.flush()
+start_time = time.time()
+last_update = time.time()
+while True :
+    frameindex += 1
+    framename = input_fmt % frameindex
+    if not os.path.isfile(framename) :
+        break
+    frame = qah.ImageSurface.create_from_png(framename)
+    if frame_height != None and frame.height != frame_height :
+        raise ValueError("inconsistent frame height for frame %d: %d vs %d" % (frameindex, frame_height, frame.height))
+    #end if
+    frame_height = frame.height
+    frames.append(frame)
+    now = time.time()
+    if now - last_update >= update_interval :
+        sys.stderr.write(" frame : %d\r" % frameindex)
+        sys.stderr.flush()
+        last_update = now
+    #end if
+#end while
+sys.stderr.write("\n")
+if len(frames) == 0 :
+    raise ValueError("no input frames found")
+#end if
+pix = qah.ImageSurface.create \
+  (
+    format = frames[0].format,
+    dimensions = Vector(len(frames) * slice_thickness, frame_height)
+  )
+ctx = \
+    (qah.Context.create(pix)
+        .set_operator(CAIRO.OPERATOR_SOURCE)
+        .set_antialias(CAIRO.ANTIALIAS_NONE)
+    )
+sys.stderr.write("Generating output\n")
+sys.stderr.flush()
+last_update = time.time()
+for frameindex in range(len(frames)) :
+    frame = frames[frameindex]
+    sys.stderr.write \
+      (
+            "frame %d pat offset %d\n"
+        %
+            (
+                frameindex,
+                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
+            )
+      ) # debug
+    ctx.source = \
+        (qah.Pattern.create_for_surface(frame)
+            .set_filter(CAIRO.FILTER_FAST)
+            .set_matrix
+              (
+                Matrix.translate
+                  (
+                    (
+                        (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
+                        0
+                    )
+                  )
+              )
+        )
+    (ctx
+        .new_path()
+        .rectangle(Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
+        .fill()
+    )
+    if now - last_update >= update_interval :
+        sys.stderr.write(" frame : %d\r" % frameindex)
+        sys.stderr.flush()
+        last_update = now
+    #end if
+#end for
+sys.stderr.write("\n")
+pix.flush().write_to_png(output_filename)
+finish_time = time.time()
+sys.stderr.write("output created in %.2f seconds\n" % (finish_time - start_time))
