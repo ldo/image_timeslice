@@ -33,6 +33,9 @@
 #         specifies the thickness (in pixels) of the row or column of pixels
 #         to be extracted from each image. If omitted, defaults to 1.
 #
+# This script also needs the Qahirah wrapper
+# <https://github.com/ldo/qahirah> for the Cairo graphics library.
+#
 # Copyright 2017 by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
 # Licensed under CC-BY-SA <http://creativecommons.org/licenses/by-sa/4.0/>.
 #-
