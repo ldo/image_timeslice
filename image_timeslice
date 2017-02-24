@@ -112,15 +112,6 @@ sys.stderr.flush()
 last_update = time.time()
 for frameindex in range(len(frames)) :
     frame = frames[frameindex]
-    sys.stderr.write \
-      (
-            "frame %d pat offset %d\n"
-        %
-            (
-                frameindex,
-                (frame.width - slice_thickness + 1) // 2 - frameindex * slice_thickness,
-            )
-      ) # debug
     ctx.source = \
         (qah.Pattern.create_for_surface(frame)
             .set_filter(CAIRO.FILTER_FAST)
