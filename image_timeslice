@@ -86,6 +86,7 @@ update_interval = 1
 frameindex = 0
 frames = []
 frame_size = None
+frame_other_size = None
 sys.stderr.write("Collecting frames\n")
 sys.stderr.flush()
 start_time = time.time()
@@ -97,7 +98,8 @@ while True :
         break
     frame = qah.ImageSurface.create_from_png(framename)
     this_frame_size = (frame.width, frame.height)[across]
-    if frame_size != None and this_frame_size != frame_size :
+    this_frame_other_size = (frame.height, frame.width)[across]
+    if frame_size != None and this_frame_size != frame_size or frame_other_size != None and this_frame_other_size != frame_other_size :
         raise ValueError \
           (
                 "inconsistent frame %s for frame %d: %d vs %d"
@@ -106,6 +108,7 @@ while True :
           )
     #end if
     frame_size = this_frame_size
+    frame_other_size = this_frame_other_size
     frames.append(frame)
     now = time.time()
     if now - last_update >= update_interval :
@@ -137,9 +140,11 @@ sys.stderr.flush()
 last_update = time.time()
 for frameindex in range(len(frames)) :
     frame = frames[frameindex]
-    pat_offset = \
+    pat_offset = math.floor \
         (
-            math.floor((frame_size * 2 * offset - slice_thickness + 1) / 2)
+            frame_other_size * offset
+        -
+            slice_thickness / 2
         -
             frameindex * slice_thickness
         )
@@ -157,11 +162,23 @@ for frameindex in range(len(frames)) :
                   )
               )
         )
+    sys.stderr.write \
+      (
+        "frame %d source matrix %s\n" % (frameindex, ctx.source.matrix)
+      ) # debug
     ctx.new_path()
     if across :
         ctx.rectangle(Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
+        sys.stderr.write \
+          (
+            "frame %d dest rect %s\n" % (frameindex, Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
+          ) # debug
     else :
         ctx.rectangle(Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
+        sys.stderr.write \
+          (
+            "frame %d dest rect %s\n" % (frameindex, Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
+          ) # debug
     #end if
     ctx.fill()
     now = time.time()
