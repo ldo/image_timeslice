@@ -164,6 +164,7 @@ for frameindex in range(len(frames)) :
         ctx.rectangle(Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
     #end if
     ctx.fill()
+    now = time.time()
     if now - last_update >= update_interval :
         sys.stderr.write(" frame : %d\r" % frameindex)
         sys.stderr.flush()
