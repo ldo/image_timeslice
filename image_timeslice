@@ -162,23 +162,11 @@ for frameindex in range(len(frames)) :
                   )
               )
         )
-    sys.stderr.write \
-      (
-        "frame %d source matrix %s\n" % (frameindex, ctx.source.matrix)
-      ) # debug
     ctx.new_path()
     if across :
         ctx.rectangle(Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
-        sys.stderr.write \
-          (
-            "frame %d dest rect %s\n" % (frameindex, Rect(frameindex * slice_thickness, 0, slice_thickness, pix.height))
-          ) # debug
     else :
         ctx.rectangle(Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
-        sys.stderr.write \
-          (
-            "frame %d dest rect %s\n" % (frameindex, Rect(0, frameindex * slice_thickness, pix.width, slice_thickness))
-          ) # debug
     #end if
     ctx.fill()
     now = time.time()
